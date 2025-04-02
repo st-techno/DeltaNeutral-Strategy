@@ -21,9 +21,6 @@ CCXT library for exchange integration
 BitMEX API credentials
 Python 3.8+ environment
 
-Key Features:
-
-
 **Key Features:**
 1. Automatically identifies top 10 traded pairs
 
@@ -42,22 +39,25 @@ Key Features:
    Risk-per-trade allocation (2% rule)
 
 7. Advanced Hedging
-def calculate_hedge_ratio(self, symbol):
-    """Dynamic hedge ratio calculation"""
-    basis = self.calculate_basis(symbol)
-    funding = self.get_funding_rate(symbol)
-    return 1 + (basis * 100) + (funding * 100)
-    ## Basis + funding rate adjusted hedging
+   
+   def calculate_hedge_ratio(self, symbol):
+        """Dynamic hedge ratio calculation"""
+        basis = self.calculate_basis(symbol)
+        funding = self.get_funding_rate(symbol)
+        return 1 + (basis * 100) + (funding * 100)
+        ** Basis + funding rate adjusted hedging **
 
-8. Backtesting Framework
+9. Backtesting Framework
    def backtest_strategy(self, symbol, days=90):
     # Historical strategy validation
     # Includes transaction cost simulation
     # Returns detailed P&L analysis
 
-9. Visual Analytics
-   def plot_risk_metrics(self):
+10. Visual Analytics
+
+    def plot_risk_metrics(self):
     """Risk visualization dashboard"""
+
     plt.figure(figsize=(12,6))
     plt.subplot(211)
     plt.plot(self.historical_pnl, label='Daily P&L')
@@ -66,9 +66,9 @@ def calculate_hedge_ratio(self, symbol):
     plt.legend()
     plt.show()
 
-10. Interactive Matplotlib visualizations
+12. Interactive Matplotlib visualizations
     
-12. Rolling volatility metrics
+13. Rolling volatility metrics
     
 14. Cumulative P&L tracking
 
@@ -103,6 +103,6 @@ if __name__ == "__main__":
 4. Interactive performance visualization
 5. Real-time risk monitoring
 
-## The code follows institutional-grade risk management practices while maintaining flexibility for crypto market conditions. 
+# The code follows institutional-grade risk management practices while maintaining flexibility for crypto market conditions. 
 
-## Always monitor positions and adjust parameters according to changing market dynamics.
+# Always monitor positions and adjust parameters according to changing market dynamics.
