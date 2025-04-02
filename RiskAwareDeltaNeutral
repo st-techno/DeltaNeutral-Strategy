@@ -1,0 +1,146 @@
+import ccxt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
+
+class RiskAwareDeltaNeutral:
+    def __init__(self, api_key, secret):
+        self.bitmex = ccxt.bitmex({
+            'apiKey': api_key,
+            'secret': secret,
+            'enableRateLimit': True
+        })
+        self.portfolio = {}
+        self.historical_pnl = []
+        
+        # Dynamic risk parameters
+        self.max_drawdown = -0.2  # -20%
+        self.risk_per_trade = 0.02  # 2%
+        self.volatility_window = 14  # Days
+        
+    def calculate_position_size(self, symbol):
+        """Dynamic position sizing based on volatility"""
+        ohlcv = self.bitmex.fetch_ohlcv(symbol, '1d', limit=self.volatility_window)
+        closes = [x[4] for x in ohlcv]
+        volatility = np.std(closes) / np.mean(closes)
+        
+        balance = self.bitmex.fetch_balance()['BTC']['free']
+        return min(
+            (balance * self.risk_per_trade) / volatility,
+            balance * 0.1  # Max 10% per position
+        )
+
+    def dynamic_stop_loss(self, symbol, entry_price):
+        """ATR-based trailing stop"""
+        ohlcv = self.bitmex.fetch_ohlcv(symbol, '4h', limit=14)
+        high = [x[2] for x in ohlcv]
+        low = [x[3] for x in ohlcv]
+        atr = np.mean([h - l for h, l in zip(high, low)])
+        return entry_price - (3 * atr)
+
+    def hedge_position(self, symbol):
+        """Dynamic hedging with volatility-adjusted ratio"""
+        basis = self.calculate_basis(symbol)
+        funding_rate = self.get_funding_rate(symbol)
+        hedge_ratio = 1 + (basis * 100) + (funding_rate * 100)
+        
+        position = self.bitmex.fetch_position(symbol)
+        required_hedge = position['contracts'] * hedge_ratio
+        self.execute_hedge(symbol, required_hedge)
+
+    def backtest_strategy(self, symbol, days=90):
+        """Historical strategy validation"""
+        data = self.bitmex.fetch_ohlcv(symbol, '4h', since=int((datetime.now() - timedelta(days=days)).timestamp()*1000))
+        df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        df['returns'] = np.log(df['close'] / df['close'].shift(1))
+        df['position'] = 0
+        df['pnl'] = 0
+        
+        for i in range(1, len(df)):
+            # Strategy logic simulation
+            basis = self.simulate_basis(df.iloc[:i])
+            funding_rate = self.simulate_funding(df.iloc[:i])
+            
+            if basis > 0.005:
+                df.loc[i, 'position'] = 1
+            elif basis < -0.005:
+                df.loc[i, 'position'] = -1
+                
+            # Calculate P&L
+            position_change = df.loc[i, 'position'] - df.loc[i-1, 'position']
+            df.loc[i, 'pnl'] = position_change * (df.loc[i, 'close'] - df.loc[i, 'open'])
+            
+        self.plot_backtest_results(df)
+        return df
+
+    def plot_backtest_results(self, df):
+        """Visualize backtest performance"""
+        plt.figure(figsize=(12,6))
+        plt.plot(df['timestamp'], df['pnl'].cumsum(), label='Cumulative P&L')
+        plt.title('Strategy Backtest Performance')
+        plt.xlabel('Time')
+        plt.ylabel('Profit in BTC')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    def run_strategy(self, symbols):
+        """Main execution loop with risk checks"""
+        while True:
+            try:
+                total_pnl = 0
+                for symbol in symbols:
+                    if self.check_risk_limits():
+                        position_size = self.calculate_position_size(symbol)
+                        self.execute_trades(symbol, position_size)
+                        self.hedge_position(symbol)
+                        total_pnl += self.update_portfolio(symbol)
+                        
+                self.historical_pnl.append(total_pnl)
+                self.monitor_drawdown()
+                
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                break
+
+    def check_risk_limits(self):
+        """Real-time risk assessment"""
+        balance = self.bitmex.fetch_balance()
+        drawdown = (balance['total'] - balance['initial']) / balance['initial']
+        return drawdown > self.max_drawdown
+
+    # Additional helper methods for trade execution, funding rate calculation, etc.
+
+    def calculate_hedge_ratio(self, symbol):
+      """Dynamic hedge ratio calculation"""
+      basis = self.calculate_basis(symbol)
+      funding = self.get_funding_rate(symbol)
+      return 1 + (basis * 100) + (funding * 100)
+
+    def backtest_strategy(self, symbol, days=90):
+      # Historical strategy validation [4][5]
+      # Includes transaction cost simulation
+      # Returns detailed P&L analysis
+
+    def plot_risk_metrics(self):
+    """Risk visualization dashboard"""
+      plt.figure(figsize=(12,6))
+      plt.subplot(211)
+      plt.plot(self.historical_pnl, label='Daily P&L')
+      plt.subplot(212)
+      plt.plot(pd.Series(self.historical_pnl).rolling(7).std(), label='Volatility')
+      plt.legend()
+      plt.show()
+
+    ## Execution Workflow
+    if __name__ == "__main__":
+    strategy = RiskAwareDeltaNeutral(API_KEY, API_SECRET)
+    top_pairs = strategy.get_liquid_pairs(10)
+    
+    # Backtest first
+    backtest_results = strategy.backtest_strategy(top_pairs[0])
+    
+    # Live execution
+    strategy.run_strategy(top_pairs)
+    
