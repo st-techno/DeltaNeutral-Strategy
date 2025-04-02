@@ -1,6 +1,7 @@
 ## Copyright @ ST Technologies
 
 ## Strategy Components Explained:
+
 a. Basis Trading (calculate_basis, basis_trade):
 
     1. Compares perpetual swap prices with quarterly futures contracts
@@ -10,6 +11,7 @@ a. Basis Trading (calculate_basis, basis_trade):
     3. Hedges with opposing futures positions
 
 b. Funding Rate Arbitrage (funding_arbitrage):
+
     1. Takes short positions when funding rates are positive
     
     2. Goes long when funding rates turn negative
@@ -17,6 +19,7 @@ b. Funding Rate Arbitrage (funding_arbitrage):
     3. Leverages 3:1 for enhanced returns
 
 c. Delta Hedging (delta_hedge):
+
     1. Maintains market-neutral exposure through continuous rebalancing
     
     2. Monitors positions in real-time using BitMEX API
@@ -24,11 +27,15 @@ c. Delta Hedging (delta_hedge):
     3. Automatically adjusts hedge ratios
 
 ## Requirements:
+
 CCXT library for exchange integration
+
 BitMEX API credentials
+
 Python 3.8+ environment
 
 **Key Features:**
+
 1. Automatically identifies top 10 traded pairs
 
 2. Implements three complementary strategies
@@ -40,12 +47,16 @@ Python 3.8+ environment
 5. Integrates with BitMEX API for real-time execution
 
 6. Dynamic Risk Management
+
    Volatility-adjusted position sizing
+
    ATR-based trailing stop loss
+
    Maximum drawdown protection
+
    Risk-per-trade allocation (2% rule)
 
-7. Advanced Hedging
+8. Advanced Hedging
    
    def calculate_hedge_ratio(self, symbol):
    
@@ -112,7 +123,7 @@ RISK_PARAMS = {
 
 3. Execution Workflow
 
-if __name__ == "__main__":
+    if __name__ == "__main__":
 
     strategy = RiskAwareDeltaNeutral(API_KEY, API_SECRET)
     
