@@ -2,6 +2,7 @@
 
 ## Strategy Components Explained:
 a. Basis Trading (calculate_basis, basis_trade):
+
     1. Compares perpetual swap prices with quarterly futures contracts
     
     2. Executes cash-and-carry arbitrage when basis exceeds 0.5%
@@ -47,44 +48,62 @@ Python 3.8+ environment
 7. Advanced Hedging
    
    def calculate_hedge_ratio(self, symbol):
+   
         """Dynamic hedge ratio calculation"""
+
         basis = self.calculate_basis(symbol)
+   
         funding = self.get_funding_rate(symbol)
+
         return 1 + (basis * 100) + (funding * 100)
+
         ** Basis + funding rate adjusted hedging **
 
 9. Backtesting Framework
    def backtest_strategy(self, symbol, days=90):
-    # Historical strategy validation
-    # Includes transaction cost simulation
-    # Returns detailed P&L analysis
 
-10. Visual Analytics
+    ** Historical strategy validation **
+
+    ** Includes transaction cost simulation **
+
+    ** Returns detailed P&L analysis **
+
+11. Visual Analytics
 
     def plot_risk_metrics(self):
+    
     """Risk visualization dashboard"""
 
     plt.figure(figsize=(12,6))
+
     plt.subplot(211)
+
     plt.plot(self.historical_pnl, label='Daily P&L')
+
     plt.subplot(212)
+
     plt.plot(pd.Series(self.historical_pnl).rolling(7).std(), label='Volatility')
+
     plt.legend()
+
     plt.show()
 
-12. Interactive Matplotlib visualizations
+13. Interactive Matplotlib visualizations
     
-13. Rolling volatility metrics
+14. Rolling volatility metrics
     
-14. Cumulative P&L tracking
+15. Cumulative P&L tracking
 
-## Implementation Requirements:
+Implementation Requirements:
 
 1. Data Analysis Stack
+
 pip install pandas numpy matplotlib ccxt ta
 
 2. Risk Parameters
-# Configure based on strategy requirements
+
+Configure based on strategy requirements
+
 RISK_PARAMS = {
     'max_daily_loss': -0.05,
     'position_limit': 0.1,
@@ -92,23 +111,31 @@ RISK_PARAMS = {
 }
 
 3. Execution Workflow
+
 if __name__ == "__main__":
+
     strategy = RiskAwareDeltaNeutral(API_KEY, API_SECRET)
+    
     top_pairs = strategy.get_liquid_pairs(10)
     
-    # Backtest first
+    ** Backtest first **
     backtest_results = strategy.backtest_strategy(top_pairs[0])
     
-    # Live execution
+    ** Live execution **
     strategy.run_strategy(top_pairs)
 
-## This python code version implements:
+This python code version implements:
 1. Dynamic position sizing based on market volatility
+
 2. Automated correlation hedging
+
 3. Backtesting with realistic market impact simulation
+
 4. Interactive performance visualization
+
 5. Real-time risk monitoring
 
-# The code follows institutional-grade risk management practices while maintaining flexibility for crypto market conditions. 
+** The code follows institutional-grade risk management practices while maintaining flexibility for crypto market conditions. **
 
-# Always monitor positions and adjust parameters according to changing market dynamics.
+** Always monitor positions and adjust parameters according to changing market dynamics. **
+
