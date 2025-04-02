@@ -3,17 +3,23 @@
 ## Strategy Components Explained:
 a. Basis Trading (calculate_basis, basis_trade):
     1. Compares perpetual swap prices with quarterly futures contracts
+    
     2. Executes cash-and-carry arbitrage when basis exceeds 0.5%
+    
     3. Hedges with opposing futures positions
 
 b. Funding Rate Arbitrage (funding_arbitrage):
     1. Takes short positions when funding rates are positive
+    
     2. Goes long when funding rates turn negative
+    
     3. Leverages 3:1 for enhanced returns
 
 c. Delta Hedging (delta_hedge):
     1. Maintains market-neutral exposure through continuous rebalancing
+    
     2. Monitors positions in real-time using BitMEX API
+    
     3. Automatically adjusts hedge ratios
 
 ## Requirements:
