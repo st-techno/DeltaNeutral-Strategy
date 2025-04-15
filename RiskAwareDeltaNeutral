@@ -120,11 +120,6 @@ class RiskAwareDeltaNeutral:
       funding = self.get_funding_rate(symbol)
       return 1 + (basis * 100) + (funding * 100)
 
-    def backtest_strategy(self, symbol, days=90):
-      # Historical strategy validation [4][5]
-      # Includes transaction cost simulation
-      # Returns detailed P&L analysis
-
     def plot_risk_metrics(self):
     """Risk visualization dashboard"""
       plt.figure(figsize=(12,6))
