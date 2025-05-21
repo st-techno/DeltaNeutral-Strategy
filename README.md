@@ -56,6 +56,8 @@ Python 3.8+ environment
 
    Risk-per-trade allocation (2% rule)
 
+7. Bloomberg analytics (BLPAPI/BQL) : Risk data integration
+   
 8. Advanced Hedging
    
    def calculate_hedge_ratio(self, symbol):
@@ -79,7 +81,7 @@ Python 3.8+ environment
 
     ** Returns detailed P&L analysis **
 
-11. Visual Analytics
+10. Visual Analytics
 
     def plot_risk_metrics(self):
     
@@ -99,11 +101,11 @@ Python 3.8+ environment
 
     plt.show()
 
-13. Interactive Matplotlib visualizations
+11. Interactive Matplotlib visualizations
     
-14. Rolling volatility metrics
+12. Rolling volatility metrics
     
-15. Cumulative P&L tracking
+13. Cumulative P&L tracking
 
 Implementation Requirements:
 
@@ -129,10 +131,10 @@ RISK_PARAMS = {
     
     top_pairs = strategy.get_liquid_pairs(10)
     
-    ** Backtest first **
+    Backtest first
     backtest_results = strategy.backtest_strategy(top_pairs[0])
     
-    ** Live execution **
+    Live execution
     strategy.run_strategy(top_pairs)
 
 This python code version implements:
@@ -146,7 +148,7 @@ This python code version implements:
 
 5. Real-time risk monitoring
 
-** The code follows institutional-grade risk management practices while maintaining flexibility for crypto market conditions. **
+The code follows institutional-grade risk management practices while maintaining flexibility for crypto market conditions.
 
-** Always monitor positions and adjust parameters according to changing market dynamics. **
+Always monitor positions and adjust parameters according to changing market dynamics. 
 
