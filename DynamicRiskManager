@@ -1,0 +1,210 @@
+import blpapi
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from bitmex import bitmex
+from arch import arch_model
+from datetime import datetime, timedelta
+
+# ========== CONFIGURATION ==========
+BITMEX_API_KEY = 'your_bitmex_api_key'
+BITMEX_API_SECRET = 'your_bitmex_api_secret'
+BLOOMBERG_HOST = 'localhost'
+BLOOMBERG_PORT = 8194
+TARGET_CRYPTO_PAIRS = ['XBTUSD', 'ETHUSD', 'ADAUSD', 'LINKUSD', 'XRPUSD']
+INITIAL_CAPITAL = 1_000_000  # $1M
+MAX_DRAWDOWN = 0.15
+VAR_CONFIDENCE = 0.99
+
+# ========== RISK MANAGEMENT ==========
+class DynamicRiskManager:
+    def __init__(self, lookback=30, var_conf=VAR_CONFIDENCE, max_dd=MAX_DRAWDOWN):
+        self.lookback = lookback
+        self.var_confidence = var_conf
+        self.max_drawdown = max_dd
+
+    def calculate_garch_var(self, returns):
+        if len(returns) < self.lookback:
+            return np.nan
+        model = arch_model(returns[-self.lookback:], vol='Garch', dist='Normal')
+        res = model.fit(disp='off')
+        forecast = res.forecast(horizon=1)
+        sigma = np.sqrt(forecast.variance.values[-1][0])
+        var = np.percentile(returns, (1 - self.var_confidence) * 100)
+        return sigma * var
+
+    def dynamic_hedge_ratio(self, spot_returns, fut_returns):
+        if len(spot_returns) < 2 or len(fut_returns) < 2:
+            return 1.0
+        cov = np.cov(spot_returns, fut_returns)
+        beta = cov[0, 1] / cov[1, 1]
+        return np.clip(beta, 0.8, 1.2)
+
+    def check_drawdown(self, equity_curve):
+        peak = equity_curve.cummax()
+        dd = (peak - equity_curve) / peak
+        return dd.max() < self.max_drawdown
+
+# ========== STRATEGY CORE ==========
+class DeltaNeutralStrategy:
+    def __init__(self):
+        # Bloomberg
+        self.bloomberg_session = blpapi.Session(
+            blpapi.SessionOptions()
+            .setServerHost(BLOOMBERG_HOST)
+            .setServerPort(BLOOMBERG_PORT)
+        )
+        self.bloomberg_session.start()
+        # BitMEX
+        self.bitmex_client = bitmex(api_key=BITMEX_API_KEY, api_secret=BITMEX_API_SECRET)
+        # Risk
+        self.risk_mgr = DynamicRiskManager()
+        # Portfolio
+        self.capital = INITIAL_CAPITAL
+        self.positions = {pair: 0 for pair in TARGET_CRYPTO_PAIRS}
+        self.pnl_history = []
+
+    def get_bloomberg_risk_data(self, symbol):
+        """Fetch risk analytics from Bloomberg BQL"""
+        query = GET(
+                    {symbol} 
+                    :FWD_POINTS,
+                    :IMPLIED_VOLATILITY,
+                    :GAMMA,
+                    :VEGA
+            )
+            FOR('FREQ=D','DATES=RANGE(2025-05-01,2025-05-22)')
+        response = self.bloomberg_session.sendRequest(query)        
+
+        # Should return DataFrame with columns: ['IMPLIED_VOL', 'GAMMA', 'VEGA']
+        # return pd.DataFrame({'IMPLIED_VOL': [0.7], 'GAMMA': [0.02], 'VEGA': [0.1]})
+       
+        return pd.DataFrame(response)
+
+    def get_bitmex_prices(self, symbol):
+        # Simulated; replace with BitMEX API calls
+        spot = np.random.uniform(100, 1000)
+        fut = spot * np.random.uniform(0.99, 1.01)
+        return spot, fut
+
+    def get_funding_rate(self, symbol):
+        # Simulated; replace with BitMEX API call
+        return np.random.uniform(-0.001, 0.001)
+
+    def calculate_basis(self, spot, fut):
+        return (fut - spot) / spot
+
+    def determine_position_size(self, symbol, returns):
+        var = self.risk_mgr.calculate_garch_var(returns)
+        if np.isnan(var) or var == 0:
+            return 0
+        risk_per_trade = 0.01 * self.capital
+        return int(risk_per_trade / abs(var))
+
+    def execute_trade(self, symbol, spot, fut, hedge_ratio, position_size):
+        # Simulate: long spot, short future (or vice versa)
+        # For real trading, use BitMEX API to place orders
+        self.positions[symbol] += position_size * hedge_ratio
+
+    def update_pnl(self, symbol, spot, fut, position_size):
+        # Simulate P&L calculation
+        pnl = position_size * (fut - spot)
+        self.pnl_history.append(pnl)
+        self.capital += pnl
+
+    def run_strategy(self, historical_data):
+        equity_curve = [self.capital]
+        for t, row in historical_data.iterrows():
+            symbol = row['symbol']
+            spot, fut = row['spot'], row['fut']
+            funding = row['funding']
+            basis = self.calculate_basis(spot, fut)
+            returns = row['returns']
+            # Risk analytics
+            risk_data = self.get_bloomberg_risk_data(symbol)
+            hedge_ratio = self.risk_mgr.dynamic_hedge_ratio(returns['spot'], returns['fut'])
+            position_size = self.determine_position_size(symbol, returns['spot'])
+            # Strategy logic
+            if abs(basis) > 0.005 or abs(funding) > 0.0005:
+                self.execute_trade(symbol, spot, fut, hedge_ratio, position_size)
+                self.update_pnl(symbol, spot, fut, position_size)
+            equity_curve.append(self.capital)
+        return pd.Series(equity_curve)
+
+# ========== BACKTESTING ==========
+class Backtester:
+    def __init__(self, strategy):
+        self.strategy = strategy
+
+    def generate_mock_data(self, start_date, end_date):
+        # Generate mock historical data for demo
+        dates = pd.date_range(start_date, end_date, freq='D')
+        data = []
+        for symbol in TARGET_CRYPTO_PAIRS:
+            spot = np.cumsum(np.random.randn(len(dates))) + 500
+            fut = spot * (1 + np.random.uniform(-0.01, 0.01, len(dates)))
+            funding = np.random.uniform(-0.001, 0.001, len(dates))
+            returns = pd.DataFrame({'spot': np.diff(spot, prepend=spot[0]) / spot[:-1],
+                                   'fut': np.diff(fut, prepend=fut[0]) / fut[:-1]})
+            for i, date in enumerate(dates):
+                data.append({
+                    'date': date,
+                    'symbol': symbol,
+                    'spot': spot[i],
+                    'fut': fut[i],
+                    'funding': funding[i],
+                    'returns': returns.iloc[:i+1]
+                })
+        return pd.DataFrame(data).set_index('date')
+
+    def run(self, start_date, end_date):
+        historical_data = self.generate_mock_data(start_date, end_date)
+        equity_curve = self.strategy.run_strategy(historical_data)
+        self.plot_results(equity_curve)
+
+    def plot_results(self, equity_curve):
+        plt.figure(figsize=(12,6))
+        plt.plot(equity_curve, label='Strategy Equity Curve')
+        plt.title('Delta-Neutral Strategy Backtest')
+        plt.xlabel('Time')
+        plt.ylabel('Equity ($)')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig('backtest_pnl.png')
+        plt.show()
+
+# ========== PRODUCTION DEPLOYMENT NOTES ==========
+"""
+Production Deployment Strategy:
+1. Containerize with Docker; deploy on Kubernetes (EKS/GKE).
+2. Use AWS Secrets Manager for API keys.
+3. Schedule with Airflow or Kubernetes CronJobs.
+4. Monitor with Prometheus/Grafana: latency, P&L, risk metrics.
+5. Alerting: Slack/PagerDuty on drawdown or risk breaches.
+6. Implement logging and exception handling for all API calls.
+7. Use CI/CD (GitHub Actions, Jenkins) for automated testing and deployment.
+8. Regularly reconcile positions and cash with BitMEX and Bloomberg data.
+"""
+
+# ========== MAIN ==========
+if __name__ == "__main__":
+    strategy = DeltaNeutralStrategy()
+    backtester = Backtester(strategy)
+    backtester.run('2024-01-01', '2024-06-01')
+
+###
+
+Key Features:
+
+Dynamic risk management: GARCH VaR, adaptive hedge ratios, drawdown checks
+
+Basis & funding rate arbitrage: Market-neutral trading logic
+
+Bloomberg analytics (BLPAPI/BQL) : Risk data integration 
+
+Backtesting: Mock historical data, equity curve, and P&L plot
+
+Production deployment: Cloud-native, containerized, monitored, and secure
+
+###
